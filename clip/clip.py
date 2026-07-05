@@ -128,12 +128,13 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
             # loading JIT archive
             model = torch.jit.load(opened_file, map_location=device if jit else "cpu").eval()
             state_dict = None
-        except RuntimeError:
+        except (RuntimeError, MemoryError) as exc:
             # loading saved state dict
             if jit:
-                warnings.warn(f"File {model_path} is not a JIT archive. Loading as a state dict instead")
+                warnings.warn(f"File {model_path} is not a JIT archive or could not be loaded with torch.jit.load; falling back to state dict instead")
                 jit = False
-            state_dict = torch.load(opened_file, map_location="cpu")
+            opened_file.seek(0)
+            state_dict = torch.load(opened_file, map_location="cpu", weights_only=False)
 
     if not jit:
         model = build_model(state_dict or model.state_dict()).to(device)

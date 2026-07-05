@@ -68,7 +68,13 @@ MODEL_CONFIG = dict(
 )
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
+use_amp = True
+
+amp_dtype = torch.bfloat16
+if use_amp:
+    torch.backends.cudnn.benchmark = True
 print(f"Using device: {device}")
+print(f"Mixed precision enabled: {use_amp}")
 
 
 
@@ -221,6 +227,10 @@ print(f"Pretrained init: {matched} tensors matched/loaded, {skipped} skipped")
 optimizer = torch.optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=0.2)
 loss_img = nn.CrossEntropyLoss()
 loss_txt = nn.CrossEntropyLoss()
+# scaler = torch.amp.GradScaler(
+#     "cuda",
+#     enabled=use_amp
+# )
 
 os.makedirs(CHECKPOINT_DIR, exist_ok=True)
 
@@ -233,11 +243,17 @@ for epoch in range(EPOCHS):
         images = images.to(device)
         texts = texts.to(device)
 
-        logits_per_image, logits_per_text = model(images, texts)
-        labels = torch.arange(images.shape[0], device=device)
-        loss = (loss_img(logits_per_image, labels) + loss_txt(logits_per_text, labels)) / 2
+        with torch.amp.autocast(device_type=device, dtype=torch.bfloat16, enabled=use_amp):
+            logits_per_image, logits_per_text = model(images, texts)
+            labels = torch.arange(images.shape[0], device=device)
+            loss = (loss_img(logits_per_image, labels) + loss_txt(logits_per_text, labels)) / 2
 
         optimizer.zero_grad()
+        # if use_amp:
+        #     scaler.scale(loss).backward()
+        #     scaler.step(optimizer)
+        #     scaler.update()
+        # else:
         loss.backward()
         optimizer.step()
 
