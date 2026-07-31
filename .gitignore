@@ -4,7 +4,15 @@ __pycache__/
 *.egg-info
 .pytest_cache
 .ipynb_checkpoints
-
+data
 thumbs.db
 .DS_Store
 .idea
+./notebook
+*.venv
+.vscode
+clip/.venv
+checkpoints
+.venv
+.
+.github

@@ -9,9 +9,8 @@ import torch
 from PIL import Image
 from torchvision.transforms import Compose, Resize, CenterCrop, ToTensor, Normalize
 from tqdm import tqdm
-
-from .model import build_model
-from .simple_tokenizer import SimpleTokenizer as _Tokenizer
+from model import build_model
+from simple_tokenizer import SimpleTokenizer as _Tokenizer
 
 try:
     from torchvision.transforms import InterpolationMode
@@ -67,7 +66,7 @@ def _download(url: str, root: str):
                 loop.update(len(buffer))
 
     if hashlib.sha256(open(download_target, "rb").read()).hexdigest() != expected_sha256:
-        raise RuntimeError("Model has been downloaded but the SHA256 checksum does not not match")
+        raise RuntimeError("Model has been downloaded but the SHA256 checksum does not match")
 
     return download_target
 
@@ -157,6 +156,8 @@ def load(name: str, device: Union[str, torch.device] = "cuda" if torch.cuda.is_a
     def patch_device(module):
         try:
             graphs = [module.graph] if hasattr(module, "graph") else []
+            if(graphs == []):
+                print("couldnt patch graph")
         except RuntimeError:
             graphs = []
 
